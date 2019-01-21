@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html>
+	<head> 
+		<meta charset="UTF-8">
+		<script type = "text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"> </script>
+		<script>
+
+			var socket;
+
+			
+			
+			function call(){
+				$.ajax({
+					type: 'PUT',
+					url: "http://localhost:80",
+					data: JSON.stringify({
+						"activeLegID": $('#selections').val(),
+						"legProgress": $('#percentage').val()
+					}),
+					contentType: "application/json; charset=utf-8",
+					dataType: 'json'
+					//encode: true
+				});
+			};
+
+
+
+
+			$(function(){
+				socket = new WebSocket("ws://"+window.location.hostname+":8080");
+				socket.onmessage = function (event) {
+					var message = JSON.parse(event.data);
+					console.log(message);
+					drawAll(message);
+					
+
+				socket.onopen = function (event) {
+					console.log("connected");
+				};
+
+					
+					
+				}
+
+			});
+
+			
+			drawAll = function(m){
+				var canvas = $("#can")[0];
+				var ctx = canvas.getContext("2d");
+				ctx.clearRect(0, 0, canvas.width, canvas.height);                      //clear canvas for redrawing when driver cahanges
+				ctx.beginPath();
+				var d1 ="";
+				var d2 ="";
+				var distremaining = 0;
+				var timeremaining = 0;
+				$('#selections').html("");
+				for(var leg=0;leg<m['legs'].length;leg++){
+					$('#selections').append("<option> "+ m["legs"][leg]["legID"] +"</option>");
+					var ss = [];
+					var es = [];
+
+					if(m["driverLocation"]["activeLegID"]==m['legs'][leg]["legID"]){
+						var d1 = m['legs'][leg]["startStop"];
+						var d2 = m['legs'][leg]["endStop"];
+						var speed = m['legs'][leg]['speedLimit'];
+					}
+
+					for(var stop=0;stop<m['stops'].length;stop++){
+						if(m['stops'][stop]["name"] == m['legs'][leg]["startStop"]){
+							ss = [m['stops'][stop]["x"],m['stops'][stop]["y"]];
+						}else if(m['stops'][stop]["name"] == m['legs'][leg]["endStop"]){
+							es = [m['stops'][stop]["x"],m['stops'][stop]["y"]];
+						}
+					}
+
+					if(es!=[] && ss!=[]){ 
+						ctx.strokeStyle = "black";
+						if(d1!=""){
+							ctx.strokeStyle = "green";
+							var legdist = Math.pow(Math.pow(es[0]-ss[0],2)+Math.pow(es[1]-ss[1],2),1/2);
+							console.log(legdist);
+							if(m['legs'][leg]['legID']!=m['driverLocation']['activeLegID']){							
+								distremaining += legdist;
+								timeremaining += legdist/m['legs'][leg]['speedLimit'];
+							}
+						}
+						ctx.beginPath();
+						ctx.moveTo(ss[0]*2, ss[1]*2);
+						ctx.lineTo(es[0]*2, es[1]*2);
+						ctx.stroke();
+						
+
+						
+						}
+					};
+				
+
+
+
+				var x,y,x2,y2;
+				for(stop=0;stop<m['stops'].length;stop++){
+					
+					ctx.fillStyle = "#FF0000";
+					ctx.font = "10px Verdana";
+					ctx.fillText(m['stops'][stop]['name'],m['stops'][stop]["x"]*2,m['stops'][stop]["y"]*2);
+					if(m['stops'][stop]["name"] == d1){
+						x = m['stops'][stop]["x"];
+						y = m['stops'][stop]["y"];
+					}else if(m['stops'][stop]["name"] == d2){
+						x2 = m['stops'][stop]["x"];
+						y2 = m['stops'][stop]["y"];
+					}
+				};
+
+
+				
+				
+
+				dx = x + (m['driverLocation']["legProgress"]/100)*(x2-x);
+				dy = y + (m['driverLocation']["legProgress"]/100)*(y2-y);
+				legdistremainging =  Math.pow(Math.pow(x2-dx,2) + Math.pow(y2-dy,2),(1/2));
+				legtimeremaining = legdistremainging/speed;
+				$('#time1').html(Math.round(legtimeremaining*100)/100 + " Hours");
+				$('#time2').html(Math.round((timeremaining + legtimeremaining)*100)/100 + " Hours");
+				$('#dist').html(Math.round((distremaining + legdistremainging)*100)/100 + " KMs");
+			
+				ctx.strokeStyle = "yellow";
+				ctx.beginPath();
+				ctx.moveTo(x*2, y*2);
+				ctx.lineTo(dx*2, dy*2);
+				ctx.stroke();
+
+
+				ctx.strokeStyle = "MediumSeaGreen";
+				ctx.beginPath();
+				ctx.arc(dx*2,dy*2,8,0,2*Math.PI,false);
+				ctx.stroke();
+			};
+					
+
+			
+
+			
+		</script>
+	</head>
+
+	<body>
+		<span>
+			<canvas id = "can" height = 400px width = 400px style = "border:solid red 1px;"></canvas>
+			<div>
+				<p1>Driver Time to finish leg:</p1> <p1 id="time1"> </p1>
+			</div>
+			<div>
+				<p1>Driver Time to finish all legs:</p1> <p1 id="time2"> </p1>
+			</div>
+			<div>
+				<p1>Driver Distance Remaining:</p1> <p1 id="dist"> </p1>
+			</div>
+		</span>
+		<div>
+			<form id = "form" onsubmit = "call(); return false">
+				Driver Change Form: 
+				<select id = "selections"></select> 
+				Percentage: <input type="text" id = "percentage"> 
+				<input type = "submit" value = Submit></input> 
+			</form>
+				
+		</div>
+			
+
+	</body>
+
+	
+</html>
