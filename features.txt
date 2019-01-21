@@ -1,0 +1,14 @@
+Features:
+
+REST API: You can get /stops for all the stops, /legs for all the legs and /driver for driver location. 
+2 Time functions: Time to finish leg which calculates how long it will take the driver to complete the current leg,
+                  Time to finish all legs which will calculate how long it will take the driver to finish the entire route.
+Distance Remaining: Show how many kilometers the drivers has yet to drive to finish the route.
+
+The Stops are all marked by their letter name on the canvas. 
+The green yellowish-green line indicates the progress on the current leg where the driver is.
+The driver is indicated by a green circle.
+The black line indicates the past legs that have been completed.
+The green line indicates the legs that have yet to be completed.
+
+Form change allows the user to change where the driver is based on a percentage of the selected leg.
